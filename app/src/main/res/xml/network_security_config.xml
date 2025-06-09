@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Emulator loopback -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- Localhost for debugging -->
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <!-- Replace with your computer's IP address -->
+        <domain includeSubdomains="true">192.168.62.238</domain>
+    </domain-config>
+</network-security-config>
