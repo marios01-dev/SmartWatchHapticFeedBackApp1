@@ -25,58 +25,58 @@ public class FeedBackController implements SensorEventListener {
 
     /**
      * Triggers a vibration pattern based on sun azimuth feedback logic.
-     * Converts input parameters into a waveform vibration using Android's VibrationEffect API.
-     * Only runs if the device supports vibration and all parameters are valid.
+     * Uses Android's VibrationEffect API with direct intensity (amplitude) mapping.
      *
-     * @param intensity A multiplier applied to the duration of each pulse (acts like a strength factor)
-     * @param pulses    The number of vibration pulses to send
-     * @param duration  Duration of each vibration pulse (in ms, multiplied by intensity)
-     * @param interval  Delay between vibration pulses (in ms)
+     * @param intensity Amplitude of vibration (1–255); 0 = silent
+     * @param pulses    Number of vibration pulses
+     * @param duration  Duration of each pulse in milliseconds
+     * @param interval  Duration of pause between pulses in milliseconds
      */
     public void triggerVibrationForSunAzimuth(int intensity, int pulses, int duration, int interval) {
         Log.d("FeedBackController", "triggerVibrationForSunAzimuth called with " +
                 "Intensity=" + intensity + ", Pulses=" + pulses +
                 ", Duration=" + duration + ", Interval=" + interval);
 
-        // Step 1: Validate parameters – all values must be positive
-        if (pulses > 0 && intensity > 0 && duration > 0) {
-
-            // Step 2: Ensure the device has a vibrator and it's available
+        // Validate inputs
+        if (pulses > 0 && intensity > 0 && intensity <= 255 && duration > 0) {
             if (vibrator != null && vibrator.hasVibrator()) {
-
-                // Step 3: Create a vibration pattern: [delay, vibration, pause, vibration, pause...]
-                // Pattern length is (pulses * 2 + 1):
-                // - First element is 0 (start immediately)
-                // - Odd indices = vibration durations
-                // - Even indices = intervals between vibrations
+                // Create vibration pattern and amplitude array
                 long[] vibrationPattern = new long[pulses * 2 + 1];
-                vibrationPattern[0] = 0; // No initial delay before first vibration
+                int[] amplitudes = new int[pulses * 2 + 1];
+
+                vibrationPattern[0] = 0;   // Start immediately
+                amplitudes[0] = 0;         // No amplitude for initial delay
 
                 for (int i = 1; i <= pulses * 2; i++) {
-                    // Even indices (i % 2 == 0): interval/pause duration
-                    // Odd indices (i % 2 == 1): vibration duration (scaled by intensity)
-                    vibrationPattern[i] = (i % 2 == 0) ? interval : (long) duration * intensity;
+                    if (i % 2 == 1) {
+                        // Vibration pulse
+                        vibrationPattern[i] = duration;
+                        amplitudes[i] = intensity;
+                    } else {
+                        // Pause between pulses
+                        vibrationPattern[i] = interval;
+                        amplitudes[i] = 0;
+                    }
                 }
 
-                // Step 4: Trigger the vibration waveform with no repeat (-1)
-                vibrator.vibrate(VibrationEffect.createWaveform(vibrationPattern, -1));
+                // Trigger the vibration waveform
+                VibrationEffect effect = VibrationEffect.createWaveform(vibrationPattern, amplitudes, -1);
+                vibrator.vibrate(effect);
 
                 Log.d("FeedBackController", "✅ Sun Azimuth Vibration triggered.");
             } else {
-                // Device does not support vibration hardware
                 Log.e("FeedBackController", "❌ Device does not support vibration.");
             }
         } else {
-            // One or more parameters are invalid (non-positive)
-            Log.e("FeedBackController", "❌ Invalid parameters for Sun Azimuth vibration.");
+            Log.e("FeedBackController", "❌ Invalid parameters for vibration.");
         }
     }
 
     /**
      * Triggers a vibration pattern in response to heart rate-related feedback.
-     * The pattern consists of repeated pulses, each followed by a pause.
+     * Uses amplitude scaling to reflect intensity per pulse.
      *
-     * @param intensity Intensity level requested (not used in pattern directly, unlike in sun azimuth method)
+     * @param intensity Intensity level (1–255) representing vibration strength
      * @param pulses    Number of vibration pulses to deliver
      * @param duration  Duration (in ms) of each pulse
      * @param interval  Duration (in ms) of pause between pulses
@@ -85,36 +85,37 @@ public class FeedBackController implements SensorEventListener {
         Log.d("FeedBackController", "triggerHeartRateVibration called with intensity: "
                 + intensity + ", pulses: " + pulses + ", duration: " + duration + ", interval: " + interval);
 
-        // Step 1: Validate that all necessary values are positive
         if (pulses > 0 && intensity > 0 && duration > 0) {
 
-            // Step 2: Ensure the device has a vibrator
             if (vibrator != null && vibrator.hasVibrator()) {
 
-                // Step 3: Build the vibration pattern
-                // Pattern format: [delayBeforeStart, vibration, pause, vibration, pause, ...]
-                // For N pulses → pattern length = N * 2 + 1
+                // 1. Build vibration pattern: [0, duration, interval, duration, interval, ...]
                 long[] vibrationPattern = new long[pulses * 2 + 1];
-                vibrationPattern[0] = 0; // No delay before the first pulse
+                vibrationPattern[0] = 0; // no initial delay
+
+                // 2. Build amplitude pattern: [0, intensity, 0, intensity, 0, ...]
+                int[] amplitudes = new int[pulses * 2 + 1];
+                amplitudes[0] = 0; // no amplitude during initial delay
 
                 for (int i = 1; i <= pulses * 2; i++) {
-                    // Odd indices → vibration duration
-                    // Even indices → interval between pulses
-                    vibrationPattern[i] = (i % 2 == 0) ? interval : duration;
+                    if (i % 2 == 0) {
+                        vibrationPattern[i] = interval;   // pauses
+                        amplitudes[i] = 0;
+                    } else {
+                        vibrationPattern[i] = duration;   // vibrations
+                        amplitudes[i] = intensity;        // apply intensity
+                    }
                 }
 
-                // Step 4: Trigger the vibration pattern (no repeat: -1)
-                vibrator.vibrate(VibrationEffect.createWaveform(vibrationPattern, -1));
+                vibrator.vibrate(VibrationEffect.createWaveform(vibrationPattern, amplitudes, -1));
 
-                Log.d("FeedBackController", "✅ Custom Vibration triggered.");
+                Log.d("FeedBackController", "✅ Heart rate vibration triggered.");
             } else {
-                // Vibrator service unavailable or not supported
                 Log.e("FeedBackController", "❌ Device does not support vibration.");
             }
 
         } else {
-            // Invalid parameters (e.g., zero or negative values)
-            Log.e("FeedBackController", "Invalid parameters for custom vibration.");
+            Log.e("FeedBackController", "❌ Invalid parameters for heart rate vibration.");
         }
     }
 

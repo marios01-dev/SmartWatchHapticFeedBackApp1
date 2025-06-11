@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.smartwatchhapticsystem"
-        minSdk = 26 // ✅ Minimum SDK 26 (Android 8.0)
+        minSdk = 30 // ✅ Minimum SDK 26 (Android 8.0)
         targetSdk = 34 // ✅ Targeting Android 14 (API 34)
         versionCode = 1
         versionName = "1.0"
@@ -36,7 +36,8 @@ dependencies {
     // ✅ AndroidX Core & Material Components
     implementation(libs.appcompat)
     implementation(libs.material)
-    implementation("androidx.core:core:1.16.0") //
+    implementation("androidx.core:core:1.12.0")
+
 
     // ✅ Networking
     implementation(libs.volley)

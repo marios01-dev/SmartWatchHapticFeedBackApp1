@@ -297,9 +297,7 @@ public class BluetoothServerManager {
                 if (socket != null && socket.getRemoteDevice() != null) {
                     @SuppressLint("MissingPermission")
                     String alias = null;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        alias = socket.getRemoteDevice().getAlias();
-                    }
+                    alias = socket.getRemoteDevice().getAlias();
                     if (alias != null) {
                         androidName = alias;
                     }
